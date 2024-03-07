@@ -3,7 +3,8 @@ import express from 'express'
 const router = express.Router()
 
 import * as orderController from './../controllers'
+import * as middlewares from './../middlewares'
 
-router.get('/order', orderController.valorantEloCheckout)
+router.post('/checkout', middlewares.checkToken, orderController.valorantEloCheckout)
 
 export default router
