@@ -28,7 +28,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const router = express_1.default.Router();
-const orderController = __importStar(require("./../controllers"));
+const Controller = __importStar(require("./../controllers"));
 const middlewares = __importStar(require("./../middlewares"));
-router.post('/checkout', middlewares.checkToken, orderController.valorantEloCheckout);
+router.post('/checkout', middlewares.checkToken, Controller.valorantEloCheckout);
+router.post('/system', middlewares.checkToken, Controller.messageSendAsSystem);
 exports.default = router;

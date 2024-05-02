@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "rimraf dist && npx tsc",
-    "start": "node dist/index.js",
+    "start": "nodemon dist/index.js",
     "predev": "npm run build",
     "dev": "npx tsc -w & nodemon dist/index.js"
   },
@@ -14,19 +14,23 @@
   "license": "ISC",
   "dependencies": {
     "@supabase/supabase-js": "^2.39.7",
+    "@upstash/redis": "^1.29.0",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.18.3",
     "express-bearer-token": "^2.4.0",
     "jsonwebtoken": "^9.0.2",
-    "nodemon": "^3.1.0",
+    "redis": "^4.6.13",
+    "socket.io": "^4.7.5",
     "stripe": "^14.19.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
-    "@types/jsonwebtoken": "^9.0.6"
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/uuid": "^9.0.8"
   }
 }

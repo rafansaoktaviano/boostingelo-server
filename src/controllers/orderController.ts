@@ -1,16 +1,17 @@
 import { NextFunction, Request, Response } from 'express'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
+import { stripe } from '../lib/stripe'
+import supabase from '../config/supabase'
 import * as orderService from './../services'
 
 const supabaseUrl = process.env.SUPABASE_URL || ''
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || ''
+const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE || ''
 
 function dollarsToCents(amountInDollars: number): number {
   return Math.round(amountInDollars * 100)
 }
-
-import { stripe } from '../lib/stripe'
 
 export const valorantEloCheckout = async (req: Request, res: Response, next: NextFunction) => {
   const authorizationHeader = req.headers.authorization
@@ -32,24 +33,24 @@ export const valorantEloCheckout = async (req: Request, res: Response, next: Nex
       currentRR,
       typeService,
       winMatch,
-      agentRequest = ['Jett', 'Brimstone'],
+      agentRequest,
       priority,
       stream,
       offlineChat,
       type_order,
+      region,
     } = req.body
+
+    console.log(region)
 
     const {
       data: { user },
       error,
     } = await supabase.auth.getUser(token)
 
-    console.log(user)
-
     if (user) {
       const priceAmount = dollarsToCents(totalPrice)
 
-      //
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .insert({
@@ -58,14 +59,19 @@ export const valorantEloCheckout = async (req: Request, res: Response, next: Nex
           game_id: '2',
           price: totalPrice,
           type_order: type_order,
+          region: region,
         })
         .select()
 
-      console.log(ordersData)
-      console.log(ordersError)
+      if (ordersError) throw { message: ordersError.message }
 
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
+        metadata: {
+          order_id: ordersData[0]?.order_id,
+          user_id: user.id,
+        },
+        customer_email: user.email,
         line_items: [
           {
             price_data: {
@@ -106,7 +112,7 @@ export const valorantEloCheckout = async (req: Request, res: Response, next: Nex
           ])
           .select()
 
-        console.log(paymentData, paymentError)
+        if (paymentError) throw { message: paymentError.message }
 
         const { data: orderDetails, error: orderDetailsError } = await supabase
           .from('orders_details')
@@ -116,7 +122,6 @@ export const valorantEloCheckout = async (req: Request, res: Response, next: Nex
               start_division: currentDivision,
               end_rank: targetRank,
               end_division: targetDivision,
-              current_rank: currentRank,
               rank_rating:
                 currentRR === '0-25RR'
                   ? 0
@@ -135,16 +140,73 @@ export const valorantEloCheckout = async (req: Request, res: Response, next: Nex
               offline_chat: offlineChat,
               order_id: ordersData[0]?.order_id,
               no_stack: noStack,
+              current_rank: currentRank,
+              current_division: currentDivision,
+              current_rank_rating: currentRR,
             },
           ])
           .select()
-        // console.log(orderDetails, orderDetailsError)
+        if (orderDetailsError) throw { message: orderDetailsError.message }
+        console.log(session.id)
       }
       res.status(200).send({
         isError: false,
         data: session.url,
       })
     }
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const messageSendAsSystem = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authorizationHeader = req.headers.authorization
+
+    const supabase = createClient(supabaseUrl, supabaseServiceRole, {
+      global: {
+        headers: { Authorization: authorizationHeader || '' },
+      },
+    })
+
+    const { room_id, user_id, RR, rank } = req.body
+
+    const splitRank = rank.split(' ')
+
+    if (!room_id || !user_id || !RR || !rank) {
+      throw { message: "Message, room, and user can't be empty!!." }
+    }
+
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .insert([
+        {
+          room_id: room_id,
+          message: `🎉 You've reached ${rank} with ${RR} RR!!`,
+          is_read: false,
+          user_id: user_id,
+        },
+      ])
+      .select()
+
+    if (error) throw { message: error.message }
+
+    const { data: orderDetails, error: errorOrderDetails } = await supabase
+      .from('orders_details')
+      .update({
+        current_rank: splitRank[0],
+        current_division: splitRank[1],
+        current_rank_rating: RR,
+      })
+      .eq('order_id', room_id)
+      .select()
+
+    console.log(orderDetails)
+
+    res.status(200).send({
+      isError: false,
+      message: 'Submit Success',
+    })
   } catch (error) {
     next(error)
   }

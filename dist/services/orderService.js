@@ -9,13 +9,28 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUser = void 0;
-const getUser = (data) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        return 'ok';
-    }
-    catch (error) {
-        return error;
-    }
+exports.createOrder = void 0;
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || '';
+const createOrder = (data) => __awaiter(void 0, void 0, void 0, function* () {
+    //   try {
+    //     const { data: ordersData, error: ordersError } = await supabase
+    //       .from('orders')
+    //       .insert({
+    //         status: 'Unpaid',
+    //         customer: data.customer,
+    //         game_id: '2',
+    //         price: data.price,
+    //         type_order: data.type_order,
+    //         region: data.region,
+    //       })
+    //       .select()
+    //     if (ordersError) {
+    //       throw ordersError
+    //     }
+    //     return ordersData
+    //   } catch (error) {
+    //     return error
+    //   }
 });
-exports.getUser = getUser;
+exports.createOrder = createOrder;
