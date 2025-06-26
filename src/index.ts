@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 const app = express()
 const server = http.createServer(app)
-const PORT = process.env.PORT || 5000
+const PORT = process.env.PORT || 5001
 
 import jwt from 'jsonwebtoken'
 import { findSession, findUserSocket, saveSession } from './utils/sessionStore'
@@ -57,7 +57,6 @@ io.use(async (socket, next) => {
 
 io.on('connection', async (socket) => {
   const test = await findUserSocket(socket.userID)
-  console.log(test)
 
   const order = socket.handshake.query
 
