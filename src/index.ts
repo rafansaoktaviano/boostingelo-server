@@ -22,7 +22,7 @@ const allowedOrigins = [process.env.CLIENT_URL, 'http://localhost:3000']
 
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:3000',
+    origin: allowedOrigins[0],
     methods: ['GET', 'POST', 'PUT'],
   },
 })
