@@ -17,6 +17,9 @@ import jwt from 'jsonwebtoken'
 import { findSession, findUserSocket, saveSession } from './utils/sessionStore'
 import supabase from './config/supabase'
 
+const allowedOrigins = [process.env.CLIENT_URL, 'http://localhost:3000']
+
+
 const io = new Server(server, {
   cors: {
     origin: 'http://localhost:3000',
@@ -105,7 +108,6 @@ app.use('/api/stripe', stripeRouter)
 app.use(express.json())
 app.use(bodyParser.json())
 
-const allowedOrigins = [process.env.CLIENT_URL, 'http://localhost:3000']
 
 app.use('/api/order', orderRouter)
 
