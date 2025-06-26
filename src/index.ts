@@ -19,7 +19,6 @@ import supabase from './config/supabase'
 
 const allowedOrigins = [process.env.CLIENT_URL, 'http://localhost:3000']
 
-
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins[0],
@@ -108,11 +107,15 @@ app.use('/api/stripe', stripeRouter)
 app.use(express.json())
 app.use(bodyParser.json())
 
-
 app.use('/api/order', orderRouter)
 
 app.get('/', (req: Request, res: Response) => {
   res.send('API is Working')
+})
+
+// ✅ Health check endpoint
+app.get('/health', (req: Request, res: Response) => {
+  res.sendStatus(200)
 })
 
 // Custom Error
