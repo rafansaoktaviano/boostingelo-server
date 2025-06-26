@@ -88,9 +88,12 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(
   cors({
     origin: function (origin, callback) {
+      console.log('CORS origin:', origin)
       if (!origin || allowedOrigins.includes(origin)) {
+        console.log(true)
         callback(null, true)
       } else {
+        console.log(false)
         callback(new Error('Not allowed by CORS'))
       }
     },
