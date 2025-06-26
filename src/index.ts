@@ -102,7 +102,7 @@ app.use('/api/stripe', stripeRouter)
 app.use(express.json())
 app.use(bodyParser.json())
 
-const allowedOrigins = ['http://localhost:3000']
+const allowedOrigins = [process.env.CLIENT_URL, 'http://localhost:3000']
 
 app.use('/api/order', orderRouter)
 

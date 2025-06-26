@@ -95,8 +95,8 @@ export const valorantEloCheckout = async (req: Request, res: Response, next: Nex
           },
         ],
         mode: 'payment',
-        success_url: 'http://localhost:3000/dashboard',
-        cancel_url: 'http://localhost:3000/dashboard',
+        success_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard`,
+        cancel_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard`,
       })
 
       if (ordersData && ordersData.length > 0) {
