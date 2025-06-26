@@ -135,3 +135,5 @@ app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
 server.listen(PORT, () => {
   console.log(`RUNNING ON PORT ${PORT}`)
 })
+
+setInterval(() => {}, 1000)
