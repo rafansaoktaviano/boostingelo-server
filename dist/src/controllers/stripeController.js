@@ -48,6 +48,21 @@ const stripeWebhook = (req, res, next) => __awaiter(void 0, void 0, void 0, func
                     console.log('update successfully');
                 }
                 break;
+            case 'payment_intent.created': {
+                const pi = event.data.object;
+                console.log('📬 payment_intent.created – id:', pi.id);
+                break;
+            }
+            case 'payment_intent.succeeded': {
+                const pi = event.data.object;
+                console.log('💰 payment_intent.succeeded – id:', pi.id);
+                break;
+            }
+            case 'charge.succeeded': {
+                const charge = event.data.object;
+                console.log('💳 charge.succeeded – charge id:', charge.id);
+                break;
+            }
             default:
                 console.log(`Unhandled2 event type ${event.type}.`);
         }
