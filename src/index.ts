@@ -19,12 +19,12 @@ import supabase from './config/supabase'
 
 const allowedOrigins = [process.env.CLIENT_URL, 'http://localhost:3000']
 
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins[0],
-    methods: ['GET', 'POST', 'PUT'],
-  },
-})
+// const io = new Server(server, {
+//   cors: {
+//     origin: allowedOrigins[0],
+//     methods: ['GET', 'POST', 'PUT'],
+//   },
+// })
 declare module 'socket.io' {
   interface Socket {
     sessionID?: string | undefined
@@ -32,58 +32,58 @@ declare module 'socket.io' {
   }
 }
 
-io.use(async (socket, next) => {
-  const { sessionId } = socket.handshake.auth
-  const { token } = socket.handshake.auth
-  let userId
-  if (token) {
-    userId = jwt.verify(token || '', process.env.JWT_SECRET || '')
-  }
+// io.use(async (socket, next) => {
+//   const { sessionId } = socket.handshake.auth
+//   const { token } = socket.handshake.auth
+//   let userId
+//   if (token) {
+//     userId = jwt.verify(token || '', process.env.JWT_SECRET || '')
+//   }
 
-  if (sessionId != undefined) {
-    const session = await findSession(sessionId)
-    saveSession(sessionId, socket.id, userId?.sub as string)
+//   if (sessionId != undefined) {
+//     const session = await findSession(sessionId)
+//     saveSession(sessionId, socket.id, userId?.sub as string)
 
-    socket.sessionID = sessionId as string
-    socket.userID = userId?.sub as string
-    return next()
-  }
+//     socket.sessionID = sessionId as string
+//     socket.userID = userId?.sub as string
+//     return next()
+//   }
 
-  socket.sessionID = uuidv4()
-  socket.userID = userId?.sub as string
+//   socket.sessionID = uuidv4()
+//   socket.userID = userId?.sub as string
 
-  saveSession(socket.sessionID, socket.id, userId?.sub as string)
+//   saveSession(socket.sessionID, socket.id, userId?.sub as string)
 
-  next()
-})
+//   next()
+// })
 
-io.on('connection', async (socket) => {
-  const test = await findUserSocket(socket.userID)
+// io.on('connection', async (socket) => {
+//   const test = await findUserSocket(socket.userID)
 
-  const order = socket.handshake.query
+//   const order = socket.handshake.query
 
-  console.log('connection succcess', socket.id)
+//   console.log('connection succcess', socket.id)
 
-  socket.emit('session', {
-    sessionID: socket.sessionID,
-  })
+//   socket.emit('session', {
+//     sessionID: socket.sessionID,
+//   })
 
-  socket.on('message', async ({ message, id }) => {
-    const { data, error } = await supabase
-      .from('chat_messages')
-      .insert([{ room_id: id, message: message, is_read: false, user_id: socket.userID }])
-      .select()
+//   socket.on('message', async ({ message, id }) => {
+//     const { data, error } = await supabase
+//       .from('chat_messages')
+//       .insert([{ room_id: id, message: message, is_read: false, user_id: socket.userID }])
+//       .select()
 
-    console.log(data)
+//     console.log(data)
 
-    io.to(id).emit('message sent', { message: 'message has been sent' })
-  })
+//     io.to(id).emit('message sent', { message: 'message has been sent' })
+//   })
 
-  socket.on('join', (room) => {
-    socket.join(room)
-    console.log(`User ${socket.id} joined room: ${room}`)
-  })
-})
+//   socket.on('join', (room) => {
+//     socket.join(room)
+//     console.log(`User ${socket.id} joined room: ${room}`)
+//   })
+// })
 
 app.use(bearerToken())
 app.use(bodyParser.urlencoded({ extended: true }))
