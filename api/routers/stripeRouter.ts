@@ -1,5 +1,5 @@
 import bodyParser from 'body-parser'
-import * as stripeController from './../controllers'
+import * as stripeController from '../controllers'
 
 import express from 'express'
 

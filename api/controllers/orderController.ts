@@ -3,7 +3,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 import { stripe } from '../lib/stripe'
 import supabase from '../config/supabase'
-import * as orderService from './../services'
+import * as orderService from '../services'
 
 const supabaseUrl = process.env.SUPABASE_URL || ''
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || ''
