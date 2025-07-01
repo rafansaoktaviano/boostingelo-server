@@ -1,5 +1,4 @@
 # .vercelignore
-dist/
 node_modules/
 **/*.test.ts
 **/__tests__/
