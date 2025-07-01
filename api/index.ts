@@ -1,2 +1,1 @@
-import handler from '../src/index'
-export default handler
+export { default } from '../src/index';
