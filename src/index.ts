@@ -8,10 +8,10 @@ import bearerToken from 'express-bearer-token'
 import http from 'http'
 import { Server, Socket } from 'socket.io'
 import { v4 as uuidv4 } from 'uuid'
-import serverless from 'serverless-http'; 
+// import serverless from 'serverless-http'; 
 
 const app = express()
-const server = http.createServer(app)
+// const server = http.createServer(app)
 const PORT = process.env.PORT
 
 // import jwt from 'jsonwebtoken'
@@ -136,8 +136,8 @@ app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
   })
 })
 
-export default serverless(app);  
+// export default serverless(app);  
 
-// server.listen(PORT, () => {
-//   console.log(`RUNNING ON PORT ${PORT}`)
-// })
+app.listen(PORT, () => {
+  console.log(`RUNNING ON PORT ${PORT}`)
+})
