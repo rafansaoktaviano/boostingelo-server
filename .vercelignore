@@ -1,9 +1,6 @@
 # .vercelignore
-# Ignore source code and local build output
-src/
-dist/
-tests/
+dist/              #  <-- ignore the OLD dist so Vercel uploads only the fresh one
+node_modules/
 .vscode/
-.gitignore
-tsconfig.json
+tests/
 README.md
