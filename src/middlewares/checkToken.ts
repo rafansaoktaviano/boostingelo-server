@@ -5,6 +5,15 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.SUPABASE_URL || ''
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || ''
 
+import "express-serve-static-core";
+
+declare module "express-serve-static-core" {
+  interface Request {
+    /** Populated by express‑bearer-token */
+    token?: string;
+  }
+}
+
 let supabase: SupabaseClient
 export const checkToken = (req: Request, res: Response, next: NextFunction) => {
   try {
