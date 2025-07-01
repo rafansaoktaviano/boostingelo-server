@@ -1,364 +1,143 @@
-require("dotenv/config");
-const express = require("express");
-const bodyParser = require("body-parser");
-const cors = require("cors");
-const { join } = require("path");
-const bearerToken = require("express-bearer-token");
-const db = require("./models");
-const { Op } = require("sequelize");
-const http = require("http"); // Import the HTTP module
-const socketIo = require("socket.io");
+import express, { NextFunction, Request, Response } from 'express'
+import dotenv from 'dotenv'
+dotenv.config()
+import bodyParser from 'body-parser'
+import { orderRouter, stripeRouter } from './routers'
+import cors from 'cors'
+import bearerToken from 'express-bearer-token'
+import http from 'http'
+import { Server, Socket } from 'socket.io'
+import { v4 as uuidv4 } from 'uuid'
+import serverless from 'serverless-http'; 
 
-const PORT = process.env.PORT || 8000;
-const app = express();
+const app = express()
+const server = http.createServer(app)
+const PORT = process.env.PORT
 
-const server = http.createServer(app); // Create an HTTP server
+// import jwt from 'jsonwebtoken'
+// import { findSession, findUserSocket, saveSession } from './utils/sessionStore'
+// import supabase from './config/supabase'
 
-const { verifyToken } = require("./lib/jwt");
+const allowedOrigins = [process.env.CLIENT_URL, 'http://localhost:3000']
 
-const io = socketIo(server, {
-  cors: {
-    origin: process.env.CORS_FE_URL, // Replace with your client's URL
-    methods: ["GET", "POST", "PUT"],
-  },
-});
+// const io = new Server(server, {
+//   cors: {
+//     origin: allowedOrigins[0],
+//     methods: ['GET', 'POST', 'PUT'],
+//   },
+// })
+// declare module 'socket.io' {
+//   interface Socket {
+//     sessionID?: string | undefined
+//     userID?: string
+//   }
+// }
 
-const corsOptions = {
-  origin: "https://tech-haven-client.vercel.app",
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  credentials: true,
-  optionsSuccessStatus: 204,
-};
+// io.use(async (socket, next) => {
+//   const { sessionId } = socket.handshake.auth
+//   const { token } = socket.handshake.auth
+//   let userId
+//   if (token) {
+//     userId = jwt.verify(token || '', process.env.JWT_SECRET || '')
+//   }
 
-app.use(cors(corsOptions));
+//   if (sessionId != undefined) {
+//     const session = await findSession(sessionId)
+//     saveSession(sessionId, socket.id, userId?.sub as string)
 
-app.use(express.static("public"));
-app.use(express.json());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+//     socket.sessionID = sessionId as string
+//     socket.userID = userId?.sub as string
+//     return next()
+//   }
 
-app.use(express.static("public"));
-app.use(express.json());
-const cron = require("node-cron");
-//#region API ROUTES
+//   socket.sessionID = uuidv4()
+//   socket.userID = userId?.sub as string
 
-const socketIdMap = new Map();
-const adminSocketsMap = new Map();
+//   saveSession(socket.sessionID, socket.id, userId?.sub as string)
 
-io.on("connection", async (socket) => {
-  const userId = socket.handshake.query.userToken;
+//   next()
+// })
 
-  const decoded = verifyToken(userId);
+// io.on('connection', async (socket) => {
+//   const test = await findUserSocket(socket.userID)
 
-  const data = await db.users.findByPk(decoded.id);
+//   const order = socket.handshake.query
 
-  if (data.dataValues.role !== "Customer") {
-    const warehouseId = data.warehouses_id;
-    if (!adminSocketsMap.has(warehouseId)) {
-      adminSocketsMap.set(warehouseId, []);
-    }
-    adminSocketsMap.get(warehouseId).push(socket.id);
-  }
+//   console.log('connection succcess', socket.id)
 
-  if (decoded) {
-    if (!socketIdMap.has(decoded.id)) {
-      socketIdMap.set(decoded.id, []);
-    }
-    socketIdMap.get(decoded.id).push(socket.id);
-  }
-  console.log(`A user connected ${socket.id}`);
+//   socket.emit('session', {
+//     sessionID: socket.sessionID,
+//   })
 
-  socket.on("disconnect", () => {
-    if (decoded && data.dataValues.role === "Customer") {
-      socketIdMap.delete(socket.id);
-    } else if (decoded) {
-      const warehouseId = data.dataValues.warehouses_id;
-      if (adminSocketsMap.has(warehouseId)) {
-        const adminSockets = adminSocketsMap.get(warehouseId);
-        const index = adminSockets.indexOf(socket.id);
-        if (index !== -1) {
-          adminSockets.splice(index, 1);
-          if (adminSockets.length === 0) {
-            adminSocketsMap.delete(warehouseId);
-          }
-        }
+//   socket.on('message', async ({ message, id }) => {
+//     const { data, error } = await supabase
+//       .from('chat_messages')
+//       .insert([{ room_id: id, message: message, is_read: false, user_id: socket.userID }])
+//       .select()
+
+//     console.log(data)
+
+//     io.to(id).emit('message sent', { message: 'message has been sent' })
+//   })
+
+//   socket.on('join', (room) => {
+//     socket.join(room)
+//     console.log(`User ${socket.id} joined room: ${room}`)
+//   })
+// })
+
+app.use(bearerToken())
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      console.log('CORS origin:', origin)
+      if (!origin || allowedOrigins.includes(origin)) {
+        console.log(true)
+        callback(null, true)
+      } else {
+        console.log(false)
+        callback(new Error('Not allowed by CORS'))
       }
-    }
-  });
+    },
+  }),
+)
 
-  console.log("socketId", socketIdMap);
-});
+app.use('/api/stripe', stripeRouter)
 
-const checkAndUpdateOrders = async () => {
-  try {
-    const fifteenMinutesAgo = new Date();
-    fifteenMinutesAgo.setMinutes(fifteenMinutesAgo.getMinutes() - 15);
+app.use(express.json())
+app.use(bodyParser.json())
 
-    const [affectedRows] = await db.orders_details.update(
-      { status: "Order Canceled" },
-      {
-        where: {
-          createdAt: {
-            [Op.lt]: fifteenMinutesAgo,
-          },
-          status: "Payment Pending",
-        },
-      }
-    );
+app.use('/api/order', orderRouter)
 
-    // const oneSecondAgo = new Date();
-    // oneSecondAgo.setSeconds(oneSecondAgo.getSeconds() - 1);
+app.get('/', (req: Request, res: Response) => {
+  res.send('API is Working')
+})
 
-    // const dataWithinOneSecond = await db.orders_details.findAll({
-    //   where: {
-    //     updatedAt: {
-    //       [Op.gte]: oneSecondAgo,
-    //     },
-    //     status: "Order Canceled",
-    //   },
-    //   group: ["transaction_uid"],
-    // });
+// ✅ Health check endpoint
+app.get('/health', (req: Request, res: Response) => {
+  res.sendStatus(200)
+})
 
-    console.log(`Canceled ${affectedRows} orders.`);
+// Custom Error
 
-    // if (dataWithinOneSecond.length > 0) {
-    //   dataWithinOneSecond.forEach((order) => {
-    //     const userId = order.dataValues.users_id;
-    //     const socketId = socketIdMap.get(userId);
-    //     if (socketId) {
-    //       io.to(socketId).emit("statusChange", { status: "Order Canceled" });
-    //     }
-    //   });
-    // }
-  } catch (error) {
-    console.error("Error canceling orders:", error);
-  }
-};
+interface CustomError extends Error {
+  status?: number
+  statusCode: number
+}
 
-const checkPackageArrived = async () => {
-  try {
-    const oneMinutesAgo = new Date();
-    oneMinutesAgo.setMinutes(oneMinutesAgo.getMinutes() - 1);
-
-    const [affectedRows] = await db.orders_details.update(
-      { status: "Package Arrived" },
-      {
-        where: {
-          createdAt: {
-            [Op.lt]: oneMinutesAgo,
-          },
-          status: "Package Sent",
-        },
-      }
-    );
-
-    const oneSecondAgo = new Date();
-    oneSecondAgo.setSeconds(oneSecondAgo.getSeconds() - 1);
-
-    const dataWithinOneSecond = await db.orders_details.findAll({
-      where: {
-        updatedAt: {
-          [Op.gte]: oneSecondAgo,
-        },
-        status: "Package Arrived",
-      },
-      group: ["transaction_uid"],
-    });
-
-    console.log(dataWithinOneSecond);
-    if (dataWithinOneSecond) {
-      const user = dataWithinOneSecond.map((value) => {
-        console.log(value);
-        return socketIdMap.get(value.users_id);
-      });
-
-      console.log(user);
-
-      if (user) {
-        user.map((value) => {
-          return io.to(value).emit("Package Arrived", {
-            message: "Your package has been Arrived",
-          });
-        });
-      }
-    }
-
-    console.log(`Package Arrived ${affectedRows}`);
-  } catch (error) {
-    console.error("Error canceling orders:", error);
-  }
-};
-const orderCompleteAfter7Days = async () => {
-  try {
-    const oneMinutesAgo = new Date();
-    oneMinutesAgo.setDate(oneMinutesAgo.getDate() - 7);
-
-    const [affectedRows] = await db.orders_details.update(
-      { status: "Order Completed" },
-      {
-        where: {
-          createdAt: {
-            [Op.lt]: oneMinutesAgo,
-          },
-          status: "Package Arrived",
-        },
-      }
-    );
-
-    const oneSecondAgo = new Date();
-    oneSecondAgo.setSeconds(oneSecondAgo.getSeconds() - 1);
-
-    const dataWithinOneSecond = await db.orders_details.findAll({
-      where: {
-        updatedAt: {
-          [Op.gte]: oneSecondAgo,
-        },
-        status: "Order Completed",
-      },
-      group: ["transaction_uid"],
-    });
-
-    console.log(dataWithinOneSecond);
-    if (dataWithinOneSecond) {
-      const user = dataWithinOneSecond.map((value) => {
-        console.log(value);
-        return socketIdMap.get(value.users_id);
-      });
-
-      console.log(user);
-
-      if (user) {
-        user.map((value) => {
-          return io.to(value).emit("Order Completed", {
-            message: "Your Order Has Been Completed",
-          });
-        });
-      }
-    }
-
-    console.log(`Order Completed${affectedRows}`);
-  } catch (error) {
-    console.error("Error canceling orders:", error);
-  }
-};
-
-cron.schedule("* * * * *", checkAndUpdateOrders);
-cron.schedule("* * * * *", checkPackageArrived);
-cron.schedule("* * * * *", orderCompleteAfter7Days);
-
-const attachIoToRequest = (req, res, next) => {
-  req.io = io;
-  next();
-};
-
-const adminSocket = (req, res, next) => {
-  req.adminSocket = adminSocketsMap;
-  req.customerSocket = socketIdMap;
-  next();
-};
-
-// ===========================
-// NOTE : Add your routes here
-// Import Router
-const {
-  orderRouter,
-  authRouter,
-  userRouter,
-  adminRouter,
-  reportRouter,
-} = require("./routers");
-
-const {
-  productRouter,
-  categoryRouter,
-  warehouseRouter,
-  stockRouter,
-  rajaOngkirRouter,
-} = require("./routers");
-app.use("/api/product", productRouter);
-app.use(bearerToken());
-app.use("/api/order", attachIoToRequest, adminSocket, orderRouter);
-app.use("/api/auth", authRouter);
-app.use("/api/user", userRouter);
-app.use("/api/admin", adminRouter);
-app.use("/api/report", reportRouter);
-// app.use("/profilepicture", express.static(`${__dirname}/public/profilePictures`));
-app.use("/static", express.static(`${__dirname}/public`));
-app.use("/static", express.static("public"));
-// app.use("/products", express.static(`${__dirname}/public/products`));
-app.use("/api/category", categoryRouter);
-app.use("/api/warehouse", warehouseRouter);
-app.use("/api/stock", stockRouter);
-app.use("/api/rajaongkir", rajaOngkirRouter);
-
-app.get("/api", (req, res) => {
-  res.send(`Hello, this is my API HEHEHE`);
-});
-
-app.get("/api/greetings", (req, res, next) => {
-  res.status(200).json({
-    message: "Hello, Student !",
-  });
-});
-
-// ===========================
-
-// not found
-// app.use((req, res, next) => {
-//     if (req.path.includes("/api/")) {
-//         res.status(404).send("Not found !");
-//     } else {
-//         next();
-//     }
-// });
-
-// error
-// app.use((err, req, res, next) => {
-//     if (req.path.includes("/api/")) {
-//         console.error("Error : ", err.stack);
-//         res.status(500).send("Error !");
-//     } else {
-//         next();
-//     }
-// });
-// app.use((err, req, res, next) => {
-//     if (req.path.includes("/api/")) {
-//         console.error("Error : ", err.stack);
-//         res.status(500).send("Error !");
-//     } else {
-//         next();
-//     }
-// });
-
-//#endregion
-
-//#region CLIENT
-const clientPath = "../../client/build";
-app.use(express.static(join(__dirname, clientPath)));
-
-// Serve the HTML page
-app.get("*", (req, res) => {
-  res.sendFile(join(__dirname, clientPath, "index.html"));
-});
-
-// Centralized Error
-app.use((err, req, res, next) => {
-  const statusCode = err.status || 500;
-  const statusMessage = err.message || "Error";
-
+app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
+  const statusCode = err.statusCode || 500
+  const statusMessage = err.message || 'Error'
   return res.status(statusCode).send({
     isError: true,
     message: statusMessage,
     data: null,
-  });
-});
+  })
+})
 
-//#endregion
+export default serverless(app);  
 
-server.listen(PORT, (err) => {
-  if (err) {
-    console.log(`ERROR: ${err}`);
-  } else {
-    console.log(`APP RUNNING at ${PORT} ✅`);
-  }
-});
+// server.listen(PORT, () => {
+//   console.log(`RUNNING ON PORT ${PORT}`)
+// })
