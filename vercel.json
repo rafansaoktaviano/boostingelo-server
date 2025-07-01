@@ -1,9 +1,7 @@
 {
-  "version": 2,
-  "functions": {
-    "api/index.ts": {
-      "runtime": "nodejs18.x"
-    }
-  },
-  "routes": [{ "src": "/(.*)", "dest": "/api/index" }]
-}
+    "version": 2,
+    "routes": [
+      { "src": "/(.*)", "dest": "/api/index" }
+    ]
+  }
+  
