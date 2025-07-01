@@ -1,12 +1,6 @@
 import express from 'express'
 const app = express()
-const PORT = process.env.PORT || 5000
-
-console.log('[DEBUG] file loaded') // #1
-process.on('exit', (c) => console.log('[DEBUG] exit', c))
-process.on('SIGTERM', () => console.log('[DEBUG] sigterm'))
-process.on('uncaughtException', (e) => console.error('[DEBUG] uncaught', e))
-process.on('unhandledRejection', (r) => console.error('[DEBUG] unhandled', r))
+const PORT = process.env.PORT
 
 app.get('/', (req, res) => res.send('Hello from Railway'))
 
