@@ -9,7 +9,6 @@ node_modules/
 
 # Ignore build output directories
 /build/
-/dist/
 
 # Ignore dependencies installed via npm or yarn
 npm-debug.log
