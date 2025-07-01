@@ -27,7 +27,8 @@
     "socket.io": "^4.7.5",
     "stripe": "^14.19.0",
     "typescript": "^5.3.3",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "vercel": "^44.2.7"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

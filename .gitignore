@@ -21,3 +21,4 @@ yarn-error.log
 # Ignore system and hidden files
 .DS_Store
 Thumbs.db
+.vercel

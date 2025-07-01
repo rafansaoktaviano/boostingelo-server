@@ -1,24 +1,24 @@
 import express, { NextFunction, Request, Response } from 'express'
-// import dotenv from 'dotenv'
-// dotenv.config()
-// import bodyParser from 'body-parser'
-// import { orderRouter, stripeRouter } from '../src/routers'
-// import cors from 'cors'
+import dotenv from 'dotenv'
+dotenv.config()
+import bodyParser from 'body-parser'
+import { orderRouter, stripeRouter } from '../src/routers'
+import cors from 'cors'
 import bearerToken from 'express-bearer-token'
-// import http from 'http'
-// import { Server, Socket } from 'socket.io'
-// import { v4 as uuidv4 } from 'uuid'
+import http from 'http'
+import { Server, Socket } from 'socket.io'
+import { v4 as uuidv4 } from 'uuid'
 import serverless from 'serverless-http'
 
 const app = express()
-// // const server = http.createServer(app)
-// const PORT = process.env.PORT
+const server = http.createServer(app)
+const PORT = process.env.PORT
 
-// // import jwt from 'jsonwebtoken'
-// // import { findSession, findUserSocket, saveSession } from './utils/sessionStore'
-// // import supabase from './config/supabase'
+// import jwt from 'jsonwebtoken'
+// import { findSession, findUserSocket, saveSession } from './utils/sessionStore'
+// import supabase from './config/supabase'
 
-// const allowedOrigins = [process.env.CLIENT_URL, 'http://localhost:3000']
+const allowedOrigins = [process.env.CLIENT_URL, 'http://localhost:3000']
 
 // // const io = new Server(server, {
 // //   cors: {
@@ -87,57 +87,53 @@ const app = express()
 // // })
 
 app.use(bearerToken())
-// app.use(bodyParser.urlencoded({ extended: true }))
-// app.use(
-//   cors({
-//     origin: function (origin, callback) {
-//       console.log('CORS origin:', origin)
-//       if (!origin || allowedOrigins.includes(origin)) {
-//         console.log(true)
-//         callback(null, true)
-//       } else {
-//         console.log(false)
-//         callback(new Error('Not allowed by CORS'))
-//       }
-//     },
-//   }),
-// )
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      console.log('CORS origin:', origin)
+      if (!origin || allowedOrigins.includes(origin)) {
+        console.log(true)
+        callback(null, true)
+      } else {
+        console.log(false)
+        callback(new Error('Not allowed by CORS'))
+      }
+    },
+  }),
+)
 
-// app.use('/api/stripe', stripeRouter)
+app.use('/api/stripe', stripeRouter)
 
-// app.use(express.json())
-// app.use(bodyParser.json())
+app.use(express.json())
+app.use(bodyParser.json())
 
-// app.use('/api/order', orderRouter)
+app.use('/api/order', orderRouter)
 
 app.get('/', (req: Request, res: Response) => {
   res.send('API is Working')
 })
 
-// // ✅ Health check endpoint
-// app.get('/health', (req: Request, res: Response) => {
-//   res.sendStatus(200)
-// })
+// ✅ Health check endpoint
+app.get('/health', (req: Request, res: Response) => {
+  res.sendStatus(200)
+})
 
-// // Custom Error
+// Custom Error
 
-// interface CustomError extends Error {
-//   status?: number
-//   statusCode: number
-// }
+interface CustomError extends Error {
+  status?: number
+  statusCode: number
+}
 
-// app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
-//   const statusCode = err.statusCode || 500
-//   const statusMessage = err.message || 'Error'
-//   return res.status(statusCode).send({
-//     isError: true,
-//     message: statusMessage,
-//     data: null,
-//   })
-// })
+app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
+  const statusCode = err.statusCode || 500
+  const statusMessage = err.message || 'Error'
+  return res.status(statusCode).send({
+    isError: true,
+    message: statusMessage,
+    data: null,
+  })
+})
 
-export default serverless(app)
-
-// // app.listen(PORT, () => {
-// //   console.log(`RUNNING ON PORT ${PORT}`)
-// // })
+export default app
