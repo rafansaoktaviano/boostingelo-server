@@ -4,7 +4,7 @@ import express, { NextFunction, Request, Response } from 'express'
 // import bodyParser from 'body-parser'
 // import { orderRouter, stripeRouter } from '../src/routers'
 // import cors from 'cors'
-// import bearerToken from 'express-bearer-token'
+import bearerToken from 'express-bearer-token'
 // import http from 'http'
 // import { Server, Socket } from 'socket.io'
 // import { v4 as uuidv4 } from 'uuid'
@@ -86,7 +86,7 @@ const app = express()
 // //   })
 // // })
 
-// app.use(bearerToken())
+app.use(bearerToken())
 // app.use(bodyParser.urlencoded({ extended: true }))
 // app.use(
 //   cors({
