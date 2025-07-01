@@ -10,7 +10,7 @@ process.on('unhandledRejection', (r) => console.error('[DEBUG] unhandled', r))
 
 app.get('/', (req, res) => res.send('Hello from Railway'))
 
-app.listen(Number(process.env.PORT), '0.0.0.0', () => console.log(`Server running on ${PORT}`)
+app.listen(Number(process.env.PORT), '0.0.0.0', () => console.log(`Server running on ${PORT}`))
 
 // import express, { NextFunction, Request, Response } from 'express'
 // import dotenv from 'dotenv'
