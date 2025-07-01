@@ -1,0 +1,9 @@
+# .vercelignore
+# Ignore source code and local build output
+src/
+dist/
+tests/
+.vscode/
+.gitignore
+tsconfig.json
+README.md
