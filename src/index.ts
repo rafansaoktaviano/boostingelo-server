@@ -1,150 +1,142 @@
-import express from 'express'
+import express, { NextFunction, Request, Response } from 'express'
+import dotenv from 'dotenv'
+dotenv.config()
+import bodyParser from 'body-parser'
+import { orderRouter, stripeRouter } from './routers'
+import cors from 'cors'
+import bearerToken from 'express-bearer-token'
+import http from 'http'
+import { Server, Socket } from 'socket.io'
+import { v4 as uuidv4 } from 'uuid'
+
 const app = express()
-const PORT = process.env.PORT
+const server = http.createServer(app)
+const PORT = process.env.PORT || 5001
 
-app.get('/', (req, res) => res.send('Hello from Railway'))
+import jwt from 'jsonwebtoken'
+import { findSession, findUserSocket, saveSession } from './utils/sessionStore'
+import supabase from './config/supabase'
 
-app.listen(Number(process.env.PORT), '0.0.0.0', () => console.log(`Server running on ${PORT}`))
+const allowedOrigins = [process.env.CLIENT_URL, 'http://localhost:3000']
 
-// import express, { NextFunction, Request, Response } from 'express'
-// import dotenv from 'dotenv'
-// dotenv.config()
-// import bodyParser from 'body-parser'
-// import { orderRouter, stripeRouter } from './routers'
-// import cors from 'cors'
-// import bearerToken from 'express-bearer-token'
-// import http from 'http'
-// import { Server, Socket } from 'socket.io'
-// import { v4 as uuidv4 } from 'uuid'
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins[0],
+    methods: ['GET', 'POST', 'PUT'],
+  },
+})
+declare module 'socket.io' {
+  interface Socket {
+    sessionID?: string | undefined
+    userID?: string
+  }
+}
 
-// const app = express()
-// const server = http.createServer(app)
-// const PORT = process.env.PORT || 5001
+io.use(async (socket, next) => {
+  const { sessionId } = socket.handshake.auth
+  const { token } = socket.handshake.auth
+  let userId
+  if (token) {
+    userId = jwt.verify(token || '', process.env.JWT_SECRET || '')
+  }
 
-// import jwt from 'jsonwebtoken'
-// import { findSession, findUserSocket, saveSession } from './utils/sessionStore'
-// import supabase from './config/supabase'
+  if (sessionId != undefined) {
+    const session = await findSession(sessionId)
+    saveSession(sessionId, socket.id, userId?.sub as string)
 
-// const allowedOrigins = [process.env.CLIENT_URL, 'http://localhost:3000']
+    socket.sessionID = sessionId as string
+    socket.userID = userId?.sub as string
+    return next()
+  }
 
-// // const io = new Server(server, {
-// //   cors: {
-// //     origin: allowedOrigins[0],
-// //     methods: ['GET', 'POST', 'PUT'],
-// //   },
-// // })
-// declare module 'socket.io' {
-//   interface Socket {
-//     sessionID?: string | undefined
-//     userID?: string
-//   }
-// }
+  socket.sessionID = uuidv4()
+  socket.userID = userId?.sub as string
 
-// // io.use(async (socket, next) => {
-// //   const { sessionId } = socket.handshake.auth
-// //   const { token } = socket.handshake.auth
-// //   let userId
-// //   if (token) {
-// //     userId = jwt.verify(token || '', process.env.JWT_SECRET || '')
-// //   }
+  saveSession(socket.sessionID, socket.id, userId?.sub as string)
 
-// //   if (sessionId != undefined) {
-// //     const session = await findSession(sessionId)
-// //     saveSession(sessionId, socket.id, userId?.sub as string)
+  next()
+})
 
-// //     socket.sessionID = sessionId as string
-// //     socket.userID = userId?.sub as string
-// //     return next()
-// //   }
+io.on('connection', async (socket) => {
+  const test = await findUserSocket(socket.userID)
 
-// //   socket.sessionID = uuidv4()
-// //   socket.userID = userId?.sub as string
+  const order = socket.handshake.query
 
-// //   saveSession(socket.sessionID, socket.id, userId?.sub as string)
+  console.log('connection succcess', socket.id)
 
-// //   next()
-// // })
+  socket.emit('session', {
+    sessionID: socket.sessionID,
+  })
 
-// // io.on('connection', async (socket) => {
-// //   const test = await findUserSocket(socket.userID)
+  socket.on('message', async ({ message, id }) => {
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .insert([{ room_id: id, message: message, is_read: false, user_id: socket.userID }])
+      .select()
 
-// //   const order = socket.handshake.query
+    console.log(data)
 
-// //   console.log('connection succcess', socket.id)
+    io.to(id).emit('message sent', { message: 'message has been sent' })
+  })
 
-// //   socket.emit('session', {
-// //     sessionID: socket.sessionID,
-// //   })
+  socket.on('join', (room) => {
+    socket.join(room)
+    console.log(`User ${socket.id} joined room: ${room}`)
+  })
+})
 
-// //   socket.on('message', async ({ message, id }) => {
-// //     const { data, error } = await supabase
-// //       .from('chat_messages')
-// //       .insert([{ room_id: id, message: message, is_read: false, user_id: socket.userID }])
-// //       .select()
+app.use(bearerToken())
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      console.log('CORS origin:', origin)
+      if (!origin || allowedOrigins.includes(origin)) {
+        console.log(true)
+        callback(null, true)
+      } else {
+        console.log(false)
+        callback(new Error('Not allowed by CORS'))
+      }
+    },
+  }),
+)
 
-// //     console.log(data)
+app.use('/api/stripe', stripeRouter)
 
-// //     io.to(id).emit('message sent', { message: 'message has been sent' })
-// //   })
+app.use(express.json())
+app.use(bodyParser.json())
 
-// //   socket.on('join', (room) => {
-// //     socket.join(room)
-// //     console.log(`User ${socket.id} joined room: ${room}`)
-// //   })
-// // })
+app.use('/api/order', orderRouter)
 
-// app.use(bearerToken())
-// app.use(bodyParser.urlencoded({ extended: true }))
-// app.use(
-//   cors({
-//     origin: function (origin, callback) {
-//       console.log('CORS origin:', origin)
-//       if (!origin || allowedOrigins.includes(origin)) {
-//         console.log(true)
-//         callback(null, true)
-//       } else {
-//         console.log(false)
-//         callback(new Error('Not allowed by CORS'))
-//       }
-//     },
-//   }),
-// )
+app.get('/', (req: Request, res: Response) => {
+  res.send('API is Working')
+})
 
-// app.use('/api/stripe', stripeRouter)
+// ✅ Health check endpoint
+app.get('/health', (req: Request, res: Response) => {
+  res.sendStatus(200)
+})
 
-// app.use(express.json())
-// app.use(bodyParser.json())
+// Custom Error
 
-// app.use('/api/order', orderRouter)
+interface CustomError extends Error {
+  status?: number
+  statusCode: number
+}
 
-// app.get('/', (req: Request, res: Response) => {
-//   res.send('API is Working')
-// })
+app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
+  const statusCode = err.statusCode || 500
+  const statusMessage = err.message || 'Error'
+  return res.status(statusCode).send({
+    isError: true,
+    message: statusMessage,
+    data: null,
+  })
+})
 
-// // ✅ Health check endpoint
-// app.get('/health', (req: Request, res: Response) => {
-//   res.sendStatus(200)
-// })
+setInterval(() => {}, 10000)
 
-// // Custom Error
-
-// interface CustomError extends Error {
-//   status?: number
-//   statusCode: number
-// }
-
-// app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
-//   const statusCode = err.statusCode || 500
-//   const statusMessage = err.message || 'Error'
-//   return res.status(statusCode).send({
-//     isError: true,
-//     message: statusMessage,
-//     data: null,
-//   })
-// })
-
-// setInterval(() => {}, 10000)
-
-// server.listen(PORT, () => {
-//   console.log(`RUNNING ON PORT ${PORT}`)
-// })
+server.listen(PORT, () => {
+  console.log(`RUNNING ON PORT ${PORT}`)
+})
