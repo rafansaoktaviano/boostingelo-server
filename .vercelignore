@@ -1,6 +1,6 @@
 # .vercelignore
-dist/              #  <-- ignore the OLD dist so Vercel uploads only the fresh one
+dist/
 node_modules/
-.vscode/
-tests/
-README.md
+**/*.test.ts
+**/__tests__/
+.env*

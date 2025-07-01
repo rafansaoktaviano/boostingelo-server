@@ -2,13 +2,13 @@ import express, { NextFunction, Request, Response } from 'express'
 import dotenv from 'dotenv'
 dotenv.config()
 import bodyParser from 'body-parser'
-import { orderRouter, stripeRouter } from './routers'
+import { orderRouter, stripeRouter } from '../src/routers'
 import cors from 'cors'
 import bearerToken from 'express-bearer-token'
 import http from 'http'
 import { Server, Socket } from 'socket.io'
 import { v4 as uuidv4 } from 'uuid'
-import serverless from 'serverless-http'; 
+import serverless from 'serverless-http'
 
 const app = express()
 // const server = http.createServer(app)
@@ -136,7 +136,7 @@ app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
   })
 })
 
-export default serverless(app);  
+export default serverless(app)
 
 // app.listen(PORT, () => {
 //   console.log(`RUNNING ON PORT ${PORT}`)

@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "build": "rimraf dist && tsc",
-    "start": "nodemon dist/index.js",
+    "start": "nodemon dist/api/index.js",
     "predev": "npm run build",
-    "dev": "npx tsc -w & nodemon dist/index.js"
+    "dev": "npx tsc -w & nodemon dist/api/index.js"
   },
   "keywords": [],
   "author": "",
