@@ -8,6 +8,7 @@ import bearerToken from 'express-bearer-token'
 import http from 'http'
 import { Server, Socket } from 'socket.io'
 import { v4 as uuidv4 } from 'uuid'
+import serverless from 'serverless-http'; 
 
 const app = express()
 const server = http.createServer(app)
@@ -135,8 +136,8 @@ app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
   })
 })
 
-setInterval(() => {}, 10000)
+export default serverless(app);  
 
-server.listen(PORT, () => {
-  console.log(`RUNNING ON PORT ${PORT}`)
-})
+// server.listen(PORT, () => {
+//   console.log(`RUNNING ON PORT ${PORT}`)
+// })
