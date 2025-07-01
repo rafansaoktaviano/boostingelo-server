@@ -2,10 +2,15 @@ import express from 'express'
 const app = express()
 const PORT = process.env.PORT || 5000
 
+console.log('[DEBUG] file loaded') // #1
+process.on('exit', (c) => console.log('[DEBUG] exit', c))
+process.on('SIGTERM', () => console.log('[DEBUG] sigterm'))
+process.on('uncaughtException', (e) => console.error('[DEBUG] uncaught', e))
+process.on('unhandledRejection', (r) => console.error('[DEBUG] unhandled', r))
+
 app.get('/', (req, res) => res.send('Hello from Railway'))
 
-app.listen(PORT, () => console.log(`🚀 Server running on ${PORT}`))
-
+app.listen(Number(process.env.PORT), '0.0.0.0', () => console.log(`Server running on ${PORT}`)
 
 // import express, { NextFunction, Request, Response } from 'express'
 // import dotenv from 'dotenv'
@@ -146,8 +151,6 @@ app.listen(PORT, () => console.log(`🚀 Server running on ${PORT}`))
 
 // setInterval(() => {}, 10000)
 
-
 // server.listen(PORT, () => {
 //   console.log(`RUNNING ON PORT ${PORT}`)
 // })
-
