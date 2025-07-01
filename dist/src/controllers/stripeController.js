@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.stripeWebhook = void 0;
 const stripe_1 = require("../lib/stripe");
 const supabase_1 = __importDefault(require("../config/supabase"));
-const endpointSecret = 'whsec_dbce4c85a7ac7bbb075446a17ed7937fef51386e049324ecb81832ddc5777493';
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 const stripeWebhook = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     try {

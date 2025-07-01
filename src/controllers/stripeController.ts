@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { stripe } from '../lib/stripe'
 import supabase from '../config/supabase'
-const endpointSecret = 'whsec_dbce4c85a7ac7bbb075446a17ed7937fef51386e049324ecb81832ddc5777493'
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!
 
 interface CustomRequest extends Request {
   rawBody?: string
