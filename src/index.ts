@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 const app = express()
 const server = http.createServer(app)
-const PORT = process.env.PORT || 5001
+const PORT = process.env.PORT
 
 import jwt from 'jsonwebtoken'
 import { findSession, findUserSocket, saveSession } from './utils/sessionStore'
